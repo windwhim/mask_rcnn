@@ -24,9 +24,13 @@ class CocoDetection(data.Dataset):
         anno_file = f"instances_{dataset}{years}.json"
         assert os.path.exists(root), "file '{}' does not exist.".format(root)
         self.img_root = os.path.join(root, f"{dataset}{years}")
-        assert os.path.exists(self.img_root), "path '{}' does not exist.".format(self.img_root)
+        assert os.path.exists(self.img_root), "path '{}' does not exist.".format(
+            self.img_root
+        )
         self.anno_path = os.path.join(root, "annotations", anno_file)
-        assert os.path.exists(self.anno_path), "file '{}' does not exist.".format(self.anno_path)
+        assert os.path.exists(self.anno_path), "file '{}' does not exist.".format(
+            self.anno_path
+        )
 
         self.mode = dataset
         self.transforms = transforms
@@ -59,11 +63,9 @@ class CocoDetection(data.Dataset):
         else:
             self.ids = ids
 
-    def parse_targets(self,
-                      img_id: int,
-                      coco_targets: list,
-                      w: int = None,
-                      h: int = None):
+    def parse_targets(
+        self, img_id: int, coco_targets: list, w: int = None, h: int = None
+    ):
         assert w > 0
         assert h > 0
 

@@ -15,10 +15,12 @@ from draw_box_utils import draw_objs
 
 def create_model(num_classes, box_thresh=0.5):
     backbone = resnet50_fpn_backbone()
-    model = MaskRCNN(backbone,
-                     num_classes=num_classes,
-                     rpn_score_thresh=box_thresh,
-                     box_score_thresh=box_thresh)
+    model = MaskRCNN(
+        backbone,
+        num_classes=num_classes,
+        rpn_score_thresh=box_thresh,
+        box_score_thresh=box_thresh,
+    )
 
     return model
 
@@ -29,11 +31,11 @@ def time_synchronized():
 
 
 def main():
-    num_classes = 90  # 不包含背景
+    num_classes = 20  # 不包含背景
     box_thresh = 0.5
-    weights_path = "./save_weights/model_25.pth"
-    img_path = "./test.jpg"
-    label_json_path = './coco91_indices.json'
+    weights_path = "./save_weights/model_14.pth"
+    img_path = "./images/000074.jpg"
+    label_json_path = "./pascal_voc_indices.json"
 
     # get devices
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -44,19 +46,21 @@ def main():
 
     # load train weights
     assert os.path.exists(weights_path), "{} file dose not exist.".format(weights_path)
-    weights_dict = torch.load(weights_path, map_location='cpu')
+    weights_dict = torch.load(weights_path, map_location="cpu")
     weights_dict = weights_dict["model"] if "model" in weights_dict else weights_dict
     model.load_state_dict(weights_dict)
     model.to(device)
 
     # read class_indict
-    assert os.path.exists(label_json_path), "json file {} dose not exist.".format(label_json_path)
-    with open(label_json_path, 'r') as json_file:
+    assert os.path.exists(label_json_path), "json file {} dose not exist.".format(
+        label_json_path
+    )
+    with open(label_json_path, "r") as json_file:
         category_index = json.load(json_file)
 
     # load image
     assert os.path.exists(img_path), f"{img_path} does not exits."
-    original_img = Image.open(img_path).convert('RGB')
+    original_img = Image.open(img_path).convert("RGB")
 
     # from pil image to tensor, do not normalize image
     data_transform = transforms.Compose([transforms.ToTensor()])
@@ -79,28 +83,32 @@ def main():
         predict_boxes = predictions["boxes"].to("cpu").numpy()
         predict_classes = predictions["labels"].to("cpu").numpy()
         predict_scores = predictions["scores"].to("cpu").numpy()
-        predict_mask = predictions["masks"].to("cpu").numpy()
-        predict_mask = np.squeeze(predict_mask, axis=1)  # [batch, 1, h, w] -> [batch, h, w]
+        predict_mask = predictions['masks'].to("cpu").numpy()
+        predict_mask = np.squeeze(
+            predict_mask, axis=1
+        )  # [batch, 1, h, w] -> [batch, h, w]
 
         if len(predict_boxes) == 0:
             print("没有检测到任何目标!")
             return
 
-        plot_img = draw_objs(original_img,
-                             boxes=predict_boxes,
-                             classes=predict_classes,
-                             scores=predict_scores,
-                             masks=predict_mask,
-                             category_index=category_index,
-                             line_thickness=3,
-                             font='arial.ttf',
-                             font_size=20)
+        plot_img = draw_objs(
+            original_img,
+            boxes=predict_boxes,
+            classes=predict_classes,
+            scores=predict_scores,
+            masks=predict_mask,
+            category_index=category_index,
+            line_thickness=3,
+            font="arial.ttf",
+            font_size=20,
+        )
         plt.imshow(plot_img)
         plt.show()
         # 保存预测的图片结果
-        plot_img.save("test_result.jpg")
+        result_path, ext = os.path.splitext(img_path)
+        plot_img.save(result_path + "_result" + ext)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-
