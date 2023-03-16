@@ -24,13 +24,29 @@ class IntermediateLayerGetter(nn.ModuleDict):
             of the modules for which the activations will be returned as
             the key of the dict, and the value of the dict is the name
             of the returned activation (which the user can specify).
+    这是IntermediateLayerGetter类的简化实现代码的文档字符串。它解释了这个类的作用和使用方法。
+
+    首先，它指出IntermediateLayerGetter是一个模块包装器，可以从模型中返回中间层的输出值。它有一个假设，
+    即模块已经按照使用顺序注册到模型中。这意味着如果要使其工作，就不应该在前向传递中重复使用相同的nn.Module。
+    另外，它只能查询直接分配给模型的子模块。因此，如果传递了model，则可以返回model.feature1，
+    但不能返回model.feature1.layer2。
+
+    然后，它介绍了两个参数：
+        model是我们要提取特征的模型。
+        return_layers是一个字典，其中键是要返回激活的模块名称，值是用户可以指定的返回激活的名称。
+        最后，它总结了如何使用IntermediateLayerGetter：将model和return_layers传递给构造函数，
+        并在前向传递时调用对象。在调用对象后，可以访问中间层的输出值。
     """
+
     __annotations__ = {
         "return_layers": Dict[str, str],
     }
 
     def __init__(self, model, return_layers):
-        if not set(return_layers).issubset([name for name, _ in model.named_children()]):
+        # 判断要提取特征的层是否在模型中
+        if not set(return_layers).issubset(
+            [name for name, _ in model.named_children()]
+        ):
             raise ValueError("return_layers are not present in model")
 
         orig_return_layers = return_layers
@@ -81,13 +97,15 @@ class BackboneWithFPN(nn.Module):
         out_channels (int): the number of channels in the FPN
     """
 
-    def __init__(self,
-                 backbone: nn.Module,
-                 return_layers=None,
-                 in_channels_list=None,
-                 out_channels=256,
-                 extra_blocks=None,
-                 re_getter=True):
+    def __init__(
+        self,
+        backbone: nn.Module,
+        return_layers=None,
+        in_channels_list=None,
+        out_channels=256,
+        extra_blocks=None,
+        re_getter=True,
+    ):
         super().__init__()
 
         if extra_blocks is None:
@@ -95,7 +113,9 @@ class BackboneWithFPN(nn.Module):
 
         if re_getter:
             assert return_layers is not None
-            self.body = IntermediateLayerGetter(backbone, return_layers=return_layers)
+            self.body = IntermediateLayerGetter(
+                backbone, return_layers=return_layers
+            )  # 提取backbone中的特征
         else:
             self.body = backbone
 
@@ -229,7 +249,9 @@ class LastLevelMaxPool(torch.nn.Module):
     Applies a max_pool2d on top of the last feature map
     """
 
-    def forward(self, x: List[Tensor], y: List[Tensor], names: List[str]) -> Tuple[List[Tensor], List[str]]:
+    def forward(
+        self, x: List[Tensor], y: List[Tensor], names: List[str]
+    ) -> Tuple[List[Tensor], List[str]]:
         names.append("pool")
         x.append(F.max_pool2d(x[-1], 1, 2, 0))
         return x, names
